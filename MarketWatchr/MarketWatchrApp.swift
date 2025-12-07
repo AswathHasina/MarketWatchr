@@ -11,7 +11,7 @@ import SwiftUI
 struct MarketWatchrApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            FeedScreen()
         }
     }
 }
