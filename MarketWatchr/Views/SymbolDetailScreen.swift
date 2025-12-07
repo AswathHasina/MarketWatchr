@@ -22,6 +22,17 @@ struct SymbolDetailScreen: View {
                         Text(String(format: "$%.2f", stock.price))
                             .font(.system(size: 48, weight: .bold))
                     }
+                    
+                    HStack(spacing: 8) {
+                        Image(systemName: stock.isUp ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                            .font(.title2)
+                        Text(String(format: "%@%.2f", stock.isUp ? "+" : "", stock.priceChange))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        Text(String(format: "(%.2f%%)", (stock.priceChange / stock.previousPrice * 100)))
+                            .font(.title3)
+                    }
+                    .foregroundColor(stock.isUp ? .green : .red)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 30)
