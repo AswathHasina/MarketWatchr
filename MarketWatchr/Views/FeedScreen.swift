@@ -101,8 +101,6 @@ class StockFeedViewModel: ObservableObject {
 // MARK: - Feed Screen
 struct FeedScreen: View {
     @StateObject private var viewModel = StockFeedViewModel()
-    @State private var isConnected = false
-    @State private var isFeedActive = false
     
     var body: some View {
         NavigationStack {
