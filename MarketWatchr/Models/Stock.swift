@@ -21,4 +21,14 @@ struct Stock: Identifiable {
     var isUp: Bool {
         priceChange >= 0
     }
+    
+    func updatingPrice(_ newPrice: Double) -> Stock {
+        Stock(
+            symbol: symbol,
+            price: newPrice,
+            previousPrice: previousPrice,
+            companyName: companyName,
+            description: description
+        )
+    }
 }

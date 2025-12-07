@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TopBar: View {
     let isConnected: Bool
-    @Binding var isFeedActive: Bool
+    let isFeedActive: Bool
     let onToggle: () -> Void
     
     var body: some View {
@@ -42,10 +42,10 @@ struct TopBar: View {
 }
 
 #Preview {
-    TopBar(isConnected: true, isFeedActive: .constant(true), onToggle: {
+    TopBar(isConnected: true, isFeedActive: true, onToggle: {
         print("toggle clicked")
     })
-    TopBar(isConnected: false, isFeedActive: .constant(false), onToggle: {
+    TopBar(isConnected: false, isFeedActive: false, onToggle: {
         print("toggled")
     })
 }

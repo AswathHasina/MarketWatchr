@@ -8,140 +8,90 @@
 import Foundation
 import Combine
 
-class StockFeedViewModel: NSObject, ObservableObject, URLSessionWebSocketDelegate {
-    @Published var stocks: [Stock]
-    @Published var isConnected = false
-    @Published var isFeedActive = false
+final class StockFeedViewModel: ObservableObject {
+    @Published private(set) var stocks: [Stock] = []
+    @Published private(set) var isConnected = false
+    @Published private(set) var isFeedActive = false
     
-    private var webSocketTask: URLSessionWebSocketTask?
-    private var timer: Timer?
+    private let webSocketService: WebSocketServiceProtocol
+    private let repository: StockRepository
+    private var cancellables = Set<AnyCancellable>()
+    private var updateTimer: AnyCancellable?
     
-    override init() {
-        self.stocks = initialStocks
-        super.init()
+    init(webSocketService: WebSocketServiceProtocol = WebSocketService(),
+         repository: StockRepository = StockRepository()) {
+        self.webSocketService = webSocketService
+        self.repository = repository
+        
+        self.stocks = repository.getInitialStocks()
+        
+        setupSubscriptions()
     }
     
+    // MARK: - Public Methods
     func toggleFeed() {
-        isFeedActive.toggle()
-        
         if isFeedActive {
-            connect()
+            stopFeed()
         } else {
-            disconnect()
+            startFeed()
         }
     }
     
-    private func connect() {
-        let url = URL(string: "wss://ws.postman-echo.com/raw")!
-        let session = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
-        webSocketTask = session.webSocketTask(with: url)
-        webSocketTask?.resume()
+    // MARK: - Private Methods
+    private func setupSubscriptions() {
+        // Subscribe to connection state changes
+        webSocketService.connectionStatePublisher
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isConnected, on: self)
+            .store(in: &cancellables)
         
-        // Start listening for messages
-        receiveMessage()
-        
-        // Start timer to send price updates every 2 seconds
-        timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.sendPriceUpdates()
-        }
+        // Subscribe to price updates from WebSocket
+        webSocketService.messagePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] priceUpdate in
+                self?.handlePriceUpdate(priceUpdate)
+            }
+            .store(in: &cancellables)
     }
     
-    private func disconnect() {
-        timer?.invalidate()
-        timer = nil
-        webSocketTask?.cancel(with: .goingAway, reason: nil)
-        webSocketTask = nil
-        isConnected = false
+    private func startFeed() {
+        isFeedActive = true
+        webSocketService.connect()
+        
+        // Send price updates every 2 seconds
+        updateTimer = Timer.publish(every: 2.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.generateAndSendPriceUpdates()
+            }
     }
     
-    private func sendPriceUpdates() {
-        for i in stocks.indices {
-            let currentPrice = stocks[i].price
-            // Generate a small price change (-5% to +5%)
+    private func stopFeed() {
+        isFeedActive = false
+        updateTimer?.cancel()
+        updateTimer = nil
+        webSocketService.disconnect()
+    }
+    
+    private func generateAndSendPriceUpdates() {
+        for stock in stocks {
             let changePercent = Double.random(in: -0.05...0.05)
-            let newPrice = max(10, currentPrice * (1 + changePercent))
+            let newPrice = max(10, stock.price * (1 + changePercent))
             
-            let update = PriceUpdate(
-                symbol: stocks[i].symbol,
-                price: newPrice
-            )
-            
-            // Encode and send via WebSocket
-            if let jsonData = try? JSONEncoder().encode(update),
-               let jsonString = String(data: jsonData, encoding: .utf8) {
-                let message = URLSessionWebSocketTask.Message.string(jsonString)
-                webSocketTask?.send(message) { error in
-                    if let error = error {
-                        print("WebSocket send error: \(error)")
-                    }
-                }
-            }
+            let update = PriceUpdate(symbol: stock.symbol, price: newPrice)
+            webSocketService.send(update)
         }
     }
     
-    private func receiveMessage() {
-        webSocketTask?.receive { [weak self] result in
-            switch result {
-            case .success(let message):
-                switch message {
-                case .string(let text):
-                    print("MESSAGE 👾: \(text)")
-                    self?.handleReceivedMessage(text)
-                case .data(let data):
-                    if let text = String(data: data, encoding: .utf8) {
-                        print("MESSAGE 🥶: \(text)")
-                        self?.handleReceivedMessage(text)
-                    }
-                @unknown default:
-                    break
-                }
-
-                self?.receiveMessage()
-            case .failure(let error):
-                print("WebSocket receive error: \(error)")
-            }
-        }
-    }
-    
-    private func handleReceivedMessage(_ message: String) {
-        guard let data = message.data(using: .utf8),
-              let update = try? JSONDecoder().decode(PriceUpdate.self, from: data) else {
-            print("unable to decode message")
+    private func handlePriceUpdate(_ update: PriceUpdate) {
+        guard let index = stocks.firstIndex(where: { $0.symbol == update.symbol }) else {
             return
         }
         
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            if let index = self.stocks.firstIndex(where: { $0.symbol == update.symbol }) {
-                self.stocks[index].previousPrice = self.stocks[index].price
-                self.stocks[index].price = update.price
-                self.sortStocks()
-            }
-        }
-    }
-    
-    private func sortStocks() {
+        let updatedStock = stocks[index].updatingPrice(update.price)
+        stocks[index] = updatedStock
+        
+        // Sort by price (highest first)
         stocks.sort { $0.price > $1.price }
     }
-    
-    // MARK: - URLSessionWebSocketDelegate
-    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
-        DispatchQueue.main.async {
-            self.isConnected = true
-            print("CONNECTED 🟢")
-        }
-    }
-    
-    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        DispatchQueue.main.async {
-            self.isConnected = false
-            print("DISCONNECTED 🔴")
-        }
-    }
-    
-    deinit {
-        disconnect()
-    }
-
 }

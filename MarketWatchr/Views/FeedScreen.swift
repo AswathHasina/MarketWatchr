@@ -14,10 +14,13 @@ struct FeedScreen: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Top Bar
-                TopBar(isConnected: viewModel.isConnected, isFeedActive: $viewModel.isFeedActive, onToggle: {
-                    print("🦋")
-                    viewModel.toggleFeed()
-                })
+                TopBar(
+                    isConnected: viewModel.isConnected,
+                    isFeedActive: viewModel.isFeedActive,
+                    onToggle: {
+                        viewModel.toggleFeed()
+                    }
+                )
                 
                 // symbol List
                 List(viewModel.stocks) { stock in
