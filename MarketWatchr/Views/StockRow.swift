@@ -32,5 +32,5 @@ struct StockRow: View {
 }
 
 #Preview {
-    StockRow(stock: Stock(symbol: "test", price: 15.67, companyName: "TEST"))
+    StockRow(stock: Stock(symbol: "test", price: 15.67, companyName: "TEST", description: "tesing sdesad"))
 }
