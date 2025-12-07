@@ -52,36 +52,46 @@ var initialStocks: [Stock] = [
     Stock(symbol: "LYFT", price: 13.56, previousPrice: 13.56, companyName: "Lyft Inc.", description: "Today, we’re introducing the Mini Apps Partner Program, which expands on the App Store’s ongoing support for apps that offer mini apps.")
 ]
 
-class StockFeedViewModel: ObservableObject {
+class StockFeedViewModel: NSObject, ObservableObject, URLSessionWebSocketDelegate {
     @Published var stocks: [Stock]
     @Published var isConnected = false
     @Published var isFeedActive = false
     
+    private var webSocketTask: URLSessionWebSocketTask?
     private var timer: Timer?
     
-    init() {
+    override init() {
         self.stocks = initialStocks
+        super.init()
     }
     
     func toggleFeed() {
         isFeedActive.toggle()
         
         if isFeedActive {
-            startFeed()
+            connect()
         } else {
-            stopFeed()
+            disconnect()
         }
     }
     
-    private func startFeed() {
+    private func connect() {
+        let url = URL(string: "wss://ws.postman-echo.com/raw")!
+        let session = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
+        webSocketTask = session.webSocketTask(with: url)
+        webSocketTask?.resume()
+        
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.updatePrices()
         }
     }
     
-    private func stopFeed() {
+    private func disconnect() {
         timer?.invalidate()
         timer = nil
+        webSocketTask?.cancel(with: .goingAway, reason: nil)
+        webSocketTask = nil
+        isConnected = false
     }
     
     private func updatePrices() {
@@ -101,8 +111,23 @@ class StockFeedViewModel: ObservableObject {
         stocks.sort { $0.price > $1.price }
     }
     
+    // MARK: - URLSessionWebSocketDelegate
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        DispatchQueue.main.async {
+            self.isConnected = true
+            print("CONNECTED 🟢")
+        }
+    }
+    
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        DispatchQueue.main.async {
+            self.isConnected = false
+            print("DISCONNECTED 🔴")
+        }
+    }
+    
     deinit {
-        timer?.invalidate()
+        disconnect()
     }
 }
 
