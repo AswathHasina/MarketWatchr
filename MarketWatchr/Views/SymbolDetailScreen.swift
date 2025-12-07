@@ -53,5 +53,5 @@ struct SymbolDetailScreen: View {
 }
 
 #Preview {
-    SymbolDetailScreen(stock: Stock(symbol: "GYT", price: 23.123, companyName: "TEST", description: "testing") )
+    SymbolDetailScreen(stock: Stock(symbol: "GYT", price: 23.123, previousPrice: 12.56, companyName: "TEST", description: "testing") )
 }
