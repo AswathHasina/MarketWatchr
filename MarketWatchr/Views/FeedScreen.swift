@@ -46,19 +46,29 @@ let stocks: [Stock] = [
 
 // MARK: - Feed Screen
 struct FeedScreen: View {
+    @State private var isConnected = false
+    @State private var isFeedActive = false
+    
     var body: some View {
         NavigationStack {
-            List(stocks) { stock in
-                NavigationLink(destination: SymbolDetailScreen(stock: stock)) {
-                    StockRow(stock: stock)
+            VStack(spacing: 0) {
+                // Top Bar
+                TopBar(isConnected: isConnected, isFeedActive: $isFeedActive)
+                
+                // symbol List
+                List(stocks) { stock in
+                    NavigationLink(destination: SymbolDetailScreen(stock: stock)) {
+                        StockRow(stock: stock)
+                    }
                 }
+                .listStyle(PlainListStyle())
             }
-            .listStyle(PlainListStyle())
             .navigationTitle("Stock Feed")
             .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
+
 
 #Preview {
     FeedScreen()
