@@ -7,22 +7,6 @@
 
 import SwiftUI
 
-struct Stock: Identifiable {
-    let id = UUID()
-    let symbol: String
-    var price: Double
-    var previousPrice: Double
-    let companyName: String
-    let description: String
-    var priceChange: Double {
-        price - previousPrice
-    }
-    
-    var isUp: Bool {
-        priceChange >= 0
-    }
-}
-
 // feed list
 var initialStocks: [Stock] = [
     Stock(symbol: "AAPL", price: 178.25, previousPrice: 178.25, companyName: "Apple Inc.", description: "Today, we’re introducing the Mini Apps Partner Program, which expands on the App Store’s ongoing support for apps that offer mini apps."),
@@ -82,7 +66,7 @@ class StockFeedViewModel: NSObject, ObservableObject, URLSessionWebSocketDelegat
         webSocketTask?.resume()
         
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.updatePrices()
+            self?.sendPriceUpdates()
         }
     }
     
@@ -94,12 +78,28 @@ class StockFeedViewModel: NSObject, ObservableObject, URLSessionWebSocketDelegat
         isConnected = false
     }
     
-    private func updatePrices() {
+    private func sendPriceUpdates() {
         for i in stocks.indices {
             let currentPrice = stocks[i].price
             // Generate a small price change (-5% to +5%)
             let changePercent = Double.random(in: -0.05...0.05)
             let newPrice = max(10, currentPrice * (1 + changePercent))
+            
+            let update = PriceUpdate(
+                symbol: stocks[i].symbol,
+                price: newPrice
+            )
+            
+            // Encode and send via WebSocket
+            if let jsonData = try? JSONEncoder().encode(update),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                let message = URLSessionWebSocketTask.Message.string(jsonString)
+                webSocketTask?.send(message) { error in
+                    if let error = error {
+                        print("WebSocket send error: \(error)")
+                    }
+                }
+            }
             
             stocks[i].previousPrice = stocks[i].price
             stocks[i].price = newPrice
@@ -129,6 +129,7 @@ class StockFeedViewModel: NSObject, ObservableObject, URLSessionWebSocketDelegat
     deinit {
         disconnect()
     }
+
 }
 
 
