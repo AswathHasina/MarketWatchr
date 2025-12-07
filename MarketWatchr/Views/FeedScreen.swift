@@ -65,6 +65,10 @@ class StockFeedViewModel: NSObject, ObservableObject, URLSessionWebSocketDelegat
         webSocketTask = session.webSocketTask(with: url)
         webSocketTask?.resume()
         
+        // Start listening for messages
+        receiveMessage()
+        
+        // Start timer to send price updates every 2 seconds
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.sendPriceUpdates()
         }
@@ -100,11 +104,49 @@ class StockFeedViewModel: NSObject, ObservableObject, URLSessionWebSocketDelegat
                     }
                 }
             }
-            
-            stocks[i].previousPrice = stocks[i].price
-            stocks[i].price = newPrice
         }
-        sortStocks()
+    }
+    
+    private func receiveMessage() {
+        webSocketTask?.receive { [weak self] result in
+            switch result {
+            case .success(let message):
+                switch message {
+                case .string(let text):
+                    print("MESSAGE 👾: \(text)")
+                    self?.handleReceivedMessage(text)
+                case .data(let data):
+                    if let text = String(data: data, encoding: .utf8) {
+                        print("MESSAGE 🥶: \(text)")
+                        self?.handleReceivedMessage(text)
+                    }
+                @unknown default:
+                    break
+                }
+
+                self?.receiveMessage()
+            case .failure(let error):
+                print("WebSocket receive error: \(error)")
+            }
+        }
+    }
+    
+    private func handleReceivedMessage(_ message: String) {
+        guard let data = message.data(using: .utf8),
+              let update = try? JSONDecoder().decode(PriceUpdate.self, from: data) else {
+            print("unable to decode message")
+            return
+        }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if let index = self.stocks.firstIndex(where: { $0.symbol == update.symbol }) {
+                self.stocks[index].previousPrice = self.stocks[index].price
+                self.stocks[index].price = update.price
+                self.sortStocks()
+            }
+        }
     }
     
     private func sortStocks() {
