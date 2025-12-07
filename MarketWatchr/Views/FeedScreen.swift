@@ -94,6 +94,15 @@ class StockFeedViewModel: ObservableObject {
             stocks[i].previousPrice = stocks[i].price
             stocks[i].price = newPrice
         }
+        sortStocks()
+    }
+    
+    private func sortStocks() {
+        stocks.sort { $0.price > $1.price }
+    }
+    
+    deinit {
+        timer?.invalidate()
     }
 }
 
