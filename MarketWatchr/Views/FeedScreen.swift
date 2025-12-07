@@ -52,9 +52,55 @@ var initialStocks: [Stock] = [
     Stock(symbol: "LYFT", price: 13.56, previousPrice: 13.56, companyName: "Lyft Inc.", description: "Today, we’re introducing the Mini Apps Partner Program, which expands on the App Store’s ongoing support for apps that offer mini apps.")
 ]
 
+class StockFeedViewModel: ObservableObject {
+    @Published var stocks: [Stock]
+    @Published var isConnected = false
+    @Published var isFeedActive = false
+    
+    private var timer: Timer?
+    
+    init() {
+        self.stocks = initialStocks
+    }
+    
+    func toggleFeed() {
+        isFeedActive.toggle()
+        
+        if isFeedActive {
+            startFeed()
+        } else {
+            stopFeed()
+        }
+    }
+    
+    private func startFeed() {
+        timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.updatePrices()
+        }
+    }
+    
+    private func stopFeed() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func updatePrices() {
+        for i in stocks.indices {
+            let currentPrice = stocks[i].price
+            // Generate a small price change (-5% to +5%)
+            let changePercent = Double.random(in: -0.05...0.05)
+            let newPrice = max(10, currentPrice * (1 + changePercent))
+            
+            stocks[i].previousPrice = stocks[i].price
+            stocks[i].price = newPrice
+        }
+    }
+}
+
+
 // MARK: - Feed Screen
 struct FeedScreen: View {
-
+    @StateObject private var viewModel = StockFeedViewModel()
     @State private var isConnected = false
     @State private var isFeedActive = false
     
@@ -64,6 +110,7 @@ struct FeedScreen: View {
                 // Top Bar
                 TopBar(isConnected: isConnected, isFeedActive: $isFeedActive, onToggle: {
                     print("🦋")
+                    viewModel.toggleFeed()
                 })
                 
                 // symbol List
