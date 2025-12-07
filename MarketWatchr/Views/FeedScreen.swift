@@ -47,9 +47,11 @@ let stocks: [Stock] = [
 // MARK: - Feed Screen
 struct FeedScreen: View {
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List(stocks) { stock in
-                StockRow(stock: stock)
+                NavigationLink(destination: SymbolDetailScreen(stock: stock)) {
+                    StockRow(stock: stock)
+                }
             }
             .listStyle(PlainListStyle())
             .navigationTitle("Stock Feed")
