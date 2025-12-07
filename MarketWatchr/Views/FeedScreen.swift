@@ -10,7 +10,7 @@ import SwiftUI
 struct Stock: Identifiable {
     let id = UUID()
     let symbol: String
-    let price: Double
+    var price: Double
     var previousPrice: Double
     let companyName: String
     let description: String
@@ -24,7 +24,7 @@ struct Stock: Identifiable {
 }
 
 // feed list
-let stocks: [Stock] = [
+var initialStocks: [Stock] = [
     Stock(symbol: "AAPL", price: 178.25, previousPrice: 178.25, companyName: "Apple Inc.", description: "Today, we’re introducing the Mini Apps Partner Program, which expands on the App Store’s ongoing support for apps that offer mini apps."),
     Stock(symbol: "GOOGL", price: 142.50, previousPrice: 142.50, companyName: "Alphabet Inc.", description: "Today, we’re introducing the Mini Apps Partner Program, which expands on the App Store’s ongoing support for apps that offer mini apps."),
     Stock(symbol: "MSFT", price: 378.91, previousPrice: 378.91, companyName: "Microsoft Corporation", description: "Today, we’re introducing the Mini Apps Partner Program, which expands on the App Store’s ongoing support for apps that offer mini apps."),
@@ -52,9 +52,9 @@ let stocks: [Stock] = [
     Stock(symbol: "LYFT", price: 13.56, previousPrice: 13.56, companyName: "Lyft Inc.", description: "Today, we’re introducing the Mini Apps Partner Program, which expands on the App Store’s ongoing support for apps that offer mini apps.")
 ]
 
-
 // MARK: - Feed Screen
 struct FeedScreen: View {
+
     @State private var isConnected = false
     @State private var isFeedActive = false
     
@@ -62,10 +62,12 @@ struct FeedScreen: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Top Bar
-                TopBar(isConnected: isConnected, isFeedActive: $isFeedActive)
+                TopBar(isConnected: isConnected, isFeedActive: $isFeedActive, onToggle: {
+                    print("🦋")
+                })
                 
                 // symbol List
-                List(stocks) { stock in
+                List(initialStocks) { stock in
                     NavigationLink(destination: SymbolDetailScreen(stock: stock)) {
                         StockRow(stock: stock)
                     }

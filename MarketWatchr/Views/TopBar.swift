@@ -10,6 +10,7 @@ import SwiftUI
 struct TopBar: View {
     let isConnected: Bool
     @Binding var isFeedActive: Bool
+    let onToggle: () -> Void
     
     var body: some View {
         HStack {
@@ -24,10 +25,7 @@ struct TopBar: View {
             
             Spacer()
             
-            Button(action: {
-                print("🦋")
-                isFeedActive.toggle()
-            }) {
+            Button(action: onToggle) {
                 Text(isFeedActive ? "Stop Feed" : "Start Feed")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -44,6 +42,10 @@ struct TopBar: View {
 }
 
 #Preview {
-    TopBar(isConnected: true, isFeedActive: .constant(true))
-    TopBar(isConnected: false, isFeedActive: .constant(false))
+    TopBar(isConnected: true, isFeedActive: .constant(true), onToggle: {
+        print("toggle clicked")
+    })
+    TopBar(isConnected: false, isFeedActive: .constant(false), onToggle: {
+        print("toggled")
+    })
 }
