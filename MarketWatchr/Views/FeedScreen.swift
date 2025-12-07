@@ -108,13 +108,13 @@ struct FeedScreen: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Top Bar
-                TopBar(isConnected: isConnected, isFeedActive: $isFeedActive, onToggle: {
+                TopBar(isConnected: viewModel.isConnected, isFeedActive: $viewModel.isFeedActive, onToggle: {
                     print("🦋")
                     viewModel.toggleFeed()
                 })
                 
                 // symbol List
-                List(initialStocks) { stock in
+                List(viewModel.stocks) { stock in
                     NavigationLink(destination: SymbolDetailScreen(stock: stock)) {
                         StockRow(stock: stock)
                     }
