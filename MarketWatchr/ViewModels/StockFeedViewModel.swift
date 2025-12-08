@@ -94,4 +94,8 @@ final class StockFeedViewModel: ObservableObject {
         // Sort by price (highest first)
         stocks.sort { $0.price > $1.price }
     }
+    
+    func getStock(bySymbol symbol: String) -> Stock? {
+        return stocks.first(where: { $0.symbol == symbol })
+    }
 }

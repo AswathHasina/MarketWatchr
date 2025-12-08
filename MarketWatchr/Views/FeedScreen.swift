@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FeedScreen: View {
-    @StateObject private var viewModel = StockFeedViewModel()
+    @EnvironmentObject var viewModel: StockFeedViewModel
     
     var body: some View {
         NavigationStack {
@@ -24,11 +24,14 @@ struct FeedScreen: View {
                 
                 // symbol List
                 List(viewModel.stocks) { stock in
-                    NavigationLink(destination: SymbolDetailScreen(stock: stock)) {
+                    NavigationLink(value: stock.symbol) {
                         StockRow(stock: stock)
                     }
                 }
                 .listStyle(PlainListStyle())
+                .navigationDestination(for: String.self) { symbol in
+                    SymbolDetailScreen(symbol: symbol)
+                }
             }
             .navigationTitle("Stock Feed")
             .navigationBarTitleDisplayMode(.inline)

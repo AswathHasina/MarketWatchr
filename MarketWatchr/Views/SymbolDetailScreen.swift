@@ -8,61 +8,68 @@
 import SwiftUI
 
 struct SymbolDetailScreen: View {
-    let stock: Stock
+    @EnvironmentObject var viewModel: StockFeedViewModel
+    let symbol: String
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 25) {
-                VStack(spacing: 20) {
-                    VStack(spacing: 8) {
-                        Text("Current Price")
-                            .font(.subheadline)
+            if let stock = viewModel.getStock(bySymbol: symbol) {
+                VStack(alignment: .leading, spacing: 25) {
+                    VStack(spacing: 20) {
+                        VStack(spacing: 8) {
+                            Text("Current Price")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            Text(String(format: "$%.2f", stock.price))
+                                .font(.system(size: 48, weight: .bold))
+                        }
+                        
+                        HStack(spacing: 8) {
+                            Image(systemName: stock.isUp ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                                .font(.title2)
+                            Text(String(format: "%@%.2f", stock.isUp ? "+" : "", stock.priceChange))
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            Text(String(format: "(%.2f%%)", (stock.priceChange / stock.previousPrice * 100)))
+                                .font(.title3)
+                        }
+                        .foregroundColor(stock.isUp ? .green : .red)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 30)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(15)
+                    
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("About")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text(stock.companyName)
+                            .font(.headline)
                             .foregroundColor(.secondary)
                         
-                        Text(String(format: "$%.2f", stock.price))
-                            .font(.system(size: 48, weight: .bold))
+                        Text(stock.description)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .lineSpacing(4)
                     }
-                    
-                    HStack(spacing: 8) {
-                        Image(systemName: stock.isUp ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
-                            .font(.title2)
-                        Text(String(format: "%@%.2f", stock.isUp ? "+" : "", stock.priceChange))
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        Text(String(format: "(%.2f%%)", (stock.priceChange / stock.previousPrice * 100)))
-                            .font(.title3)
-                    }
-                    .foregroundColor(stock.isUp ? .green : .red)
+                    .padding(.top, 10)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 30)
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(15)
-                
-                // Company Info
-                VStack(alignment: .leading, spacing: 15) {
-                    Text("About")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Text(stock.companyName)
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Text(stock.description)
-                        .font(.body)
-                        .foregroundColor(.primary)
-                        .lineSpacing(4)
-                }
-                .padding(.top, 10)
+                .padding()
+            } else {
+                Text("Stock not found")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+                    .padding()
             }
-            .padding()
         }
-        .navigationTitle(stock.symbol)
+        .navigationTitle(symbol)
         .navigationBarTitleDisplayMode(.large)
     }
 }
 
 #Preview {
-    SymbolDetailScreen(stock: Stock(symbol: "GYT", price: 23.123, previousPrice: 12.56, companyName: "TEST", description: "testing") )
+    SymbolDetailScreen(symbol: "TEST" )
 }
