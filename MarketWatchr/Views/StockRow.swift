@@ -30,7 +30,7 @@ struct StockRow: View {
                 .padding(3)
                 .foregroundColor(isFlashing ? .white : .black)
                 .background(
-                    RoundedRectangle(cornerRadius: 8)
+                    RoundedRectangle(cornerRadius: 3)
                         .fill(flashBackgroundColor)
                         .opacity(isFlashing ? 1.0 : 0)
                         .animation(.easeInOut(duration: 0.3), value: isFlashing)
