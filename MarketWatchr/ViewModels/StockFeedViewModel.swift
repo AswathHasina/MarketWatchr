@@ -12,11 +12,13 @@ final class StockFeedViewModel: ObservableObject {
     @Published private(set) var stocks: [Stock] = []
     @Published private(set) var isConnected = false
     @Published private(set) var isFeedActive = false
+    @Published private(set) var flashingStocks: Set<String> = []
     
     private let webSocketService: WebSocketServiceProtocol
     private let repository: StockRepository
     private var cancellables = Set<AnyCancellable>()
     private var updateTimer: AnyCancellable?
+    private var flashTimers: [String: AnyCancellable] = [:]
     
     init(webSocketService: WebSocketServiceProtocol = WebSocketService(),
          repository: StockRepository = StockRepository()) {
@@ -71,6 +73,11 @@ final class StockFeedViewModel: ObservableObject {
         updateTimer?.cancel()
         updateTimer = nil
         webSocketService.disconnect()
+        
+        // Clear all flash timers
+        flashTimers.forEach { $0.value.cancel() }
+        flashTimers.removeAll()
+        flashingStocks.removeAll()
     }
     
     private func generateAndSendPriceUpdates() {
@@ -91,11 +98,33 @@ final class StockFeedViewModel: ObservableObject {
         let updatedStock = stocks[index].updatingPrice(update.price)
         stocks[index] = updatedStock
         
+        triggerFlash(for: update.symbol)
+        
         // Sort by price (highest first)
         stocks.sort { $0.price > $1.price }
     }
     
     func getStock(bySymbol symbol: String) -> Stock? {
         return stocks.first(where: { $0.symbol == symbol })
+    }
+    
+    func isFlashing(_ symbol: String) -> Bool {
+        return flashingStocks.contains(symbol)
+    }
+    
+    private func triggerFlash(for symbol: String) {
+        // Cancel existing timer if any
+        flashTimers[symbol]?.cancel()
+        
+        // Add to flashing set
+        flashingStocks.insert(symbol)
+        
+        // Remove after 1 second
+        flashTimers[symbol] = Just(())
+            .delay(for: .seconds(1), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.flashingStocks.remove(symbol)
+                self?.flashTimers.removeValue(forKey: symbol)
+            }
     }
 }

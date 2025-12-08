@@ -9,6 +9,7 @@ import SwiftUI
 
 struct StockRow: View {
     let stock: Stock
+    let isFlashing: Bool
     
     var body: some View {
         HStack {
@@ -24,8 +25,16 @@ struct StockRow: View {
             Spacer()
             
             Text(String(format: "$%.2f", stock.price))
-                .font(.title3)
+                .font(.caption)
                 .fontWeight(.semibold)
+                .padding(3)
+                .foregroundColor(isFlashing ? .white : .black)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(flashBackgroundColor)
+                        .opacity(isFlashing ? 1.0 : 0)
+                        .animation(.easeInOut(duration: 0.3), value: isFlashing)
+                )
             
             HStack(spacing: 4) {
                 Image(systemName: stock.isUp ? "arrow.up" : "arrow.down")
@@ -37,10 +46,15 @@ struct StockRow: View {
             .frame(width: 70, alignment: .trailing)
         }
         .padding(.vertical, 8)
+        
+    }
+    
+    private var flashBackgroundColor: Color {
+        stock.isUp ? .green : .red
     }
 }
 
 #Preview {
-    StockRow(stock: Stock(symbol: "test", price: 15.67, previousPrice: 123.123, companyName: "TEST", description: "tesing sdesad"))
-    StockRow(stock: Stock(symbol: "test", price: 15.67, previousPrice: 1.1, companyName: "TEST", description: "tesing sdesad"))
+    StockRow(stock: Stock(symbol: "test", price: 15.67, previousPrice: 123.123, companyName: "TEST", description: "tesing sdesad"), isFlashing: true)
+    StockRow(stock: Stock(symbol: "test", price: 15.67, previousPrice: 1.1, companyName: "TEST", description: "tesing sdesad"), isFlashing: false)
 }

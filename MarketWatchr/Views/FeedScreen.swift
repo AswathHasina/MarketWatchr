@@ -25,7 +25,7 @@ struct FeedScreen: View {
                 // symbol List
                 List(viewModel.stocks) { stock in
                     NavigationLink(value: stock.symbol) {
-                        StockRow(stock: stock)
+                        StockRow(stock: stock, isFlashing: viewModel.isFlashing(stock.symbol))
                     }
                 }
                 .listStyle(PlainListStyle())
@@ -42,4 +42,5 @@ struct FeedScreen: View {
 
 #Preview {
     FeedScreen()
+        .environmentObject(StockFeedViewModel())
 }
